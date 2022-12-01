@@ -69,37 +69,56 @@ router.put('/:id', async (req, res) => {
       },
     });
     
-
+    //finds all tags specified by :/id, returns an array of objects with tag_id = :/id and its associated product id's
     const associatedTags = await ProductTag.findAll({ where: { tag_id: req.params.id } }); //find all associated products from ProductTag
-    const productTagIds = associatedTags.map(({ productId }) => productId);//get list of current productId
-    const newProductTags = req.body.productId //create filtered list of new productId
+    //returns an array of the affected ProductTag id's
+    const productTagIds = associatedTags.map(({ productId }) => productId);
+    //ret
+    const newProductTags = req.body.productIds
     .filter((productId) => !productTagIds.includes(productId))
     .map((productId) => {
       return {
         product_id: productId,
-        tagId: req.params.id,//??
+        tag_id: req.params.id,
       };
     });
-    
-    //figure out which ones to remove
-    const productTagsToRemove = associatedTags
-    .filter(({ productId }) => !req.body.productId.includes(productId))
-    .map(({ id}) => id);
 
-    //run both actions
+    //returns an array of all ProductTags to be removed (on existing product)
+    const productTagsToRemove = associatedTags
+    .filter(({ product_id }) => !req.body.productIds.includes(product_id))
+    .map(({ id}) => id);
+      
+    // const removedProductTags = await ProductTag.detroy({ where: { id: productTagsToRemove } });
+    // const updatedProductTags = await ProductTag.bulkCreate(newProductTags);
     const updatedProductTags = await Promise.all([
       ProductTag.destroy({ where: { id: productTagsToRemove } }),
       ProductTag.bulkCreate(newProductTags),
     ]);
 
-    res.status(200).json(updatedProductTags);
+    res.status(200).json("success");
   } catch (err) {
     res.status(500).json(err);
   }
 });
 
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   // delete on tag by its `id` value
+  try {
+    const tagData = await Tag.destroy({
+      where: {
+        id: req.params.id
+      }
+    });
+
+    if(!tagData) {
+      res.status(404).json({ message: 'No location found with this id!'});
+      return;
+    }
+
+    res.status(200).json(tagData);
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
 module.exports = router;
