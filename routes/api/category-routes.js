@@ -49,8 +49,6 @@ router.put('/:id', async (req, res) => {
       }
     });
 
-    //add applicable products*****************************************
-
     res.status(200).json(categoryData);
   } catch (err) {
     res.status(500).json(err);
